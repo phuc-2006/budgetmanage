@@ -63,7 +63,7 @@ export default function Dashboard() {
         <BalanceCard totalIncome={totalIncome} totalExpense={totalExpense} balance={balance} />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <TransactionList transactions={transactions} onDelete={id => deleteTransaction.mutate(id)} isDeleting={deleteTransaction.isPending} />
+          <TransactionList transactions={transactions} onDelete={id => deleteTransaction.mutate(id)} isDeleting={deleteTransaction.isPending} currentBalance={balance} />
           <ExpenseChart transactions={transactions} />
         </div>
       </main>
