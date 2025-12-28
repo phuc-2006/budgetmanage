@@ -4,10 +4,12 @@ import { LogOut, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useMonthlyTrend } from '@/hooks/useMonthlyTrend';
 import { BalanceCard } from '@/components/finance/BalanceCard';
 import { AddTransactionDialog } from '@/components/finance/AddTransactionDialog';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { ExpenseChart } from '@/components/finance/ExpenseChart';
+import { TrendChart } from '@/components/finance/TrendChart';
 import { MonthSelector } from '@/components/finance/MonthSelector';
 export default function Dashboard() {
   const {
@@ -25,6 +27,8 @@ export default function Dashboard() {
     isLoading,
     deleteTransaction
   } = useTransactions(month, year);
+  const { monthlyData, isLoading: trendLoading } = useMonthlyTrend();
+  
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Đang tải...</div>
@@ -40,7 +44,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
               <Wallet className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-bold hidden sm:block">Quản lý chi tiêu    </h1>
+            <h1 className="text-xl font-bold hidden sm:block">Quản lý chi tiêu</h1>
           </div>
           <div className="flex items-center gap-3">
             <AddTransactionDialog />
@@ -66,6 +70,8 @@ export default function Dashboard() {
           <TransactionList transactions={transactions} onDelete={id => deleteTransaction.mutate(id)} isDeleting={deleteTransaction.isPending} currentBalance={balance} />
           <ExpenseChart transactions={transactions} />
         </div>
+
+        <TrendChart data={monthlyData} isLoading={trendLoading} />
       </main>
     </div>;
 }
