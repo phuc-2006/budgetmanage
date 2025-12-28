@@ -10,9 +10,10 @@ interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
   isDeleting?: boolean;
+  currentBalance: number;
 }
 
-export function TransactionList({ transactions, onDelete, isDeleting }: TransactionListProps) {
+export function TransactionList({ transactions, onDelete, isDeleting, currentBalance }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
       <Card className="glass">
@@ -24,15 +25,40 @@ export function TransactionList({ transactions, onDelete, isDeleting }: Transact
     );
   }
 
+  // Sort transactions by date descending, then by created_at descending
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    const dateCompare = b.date.localeCompare(a.date);
+    if (dateCompare !== 0) return dateCompare;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  // Calculate running balance for each transaction (from newest to oldest)
+  const transactionsWithBalance = sortedTransactions.map((transaction, index) => {
+    // Start with current balance and add back transactions that came after this one
+    let balanceAfter = currentBalance;
+    for (let i = 0; i < index; i++) {
+      const t = sortedTransactions[i];
+      if (t.type === 'income') {
+        balanceAfter -= Number(t.amount);
+      } else {
+        balanceAfter += Number(t.amount);
+      }
+    }
+    return { ...transaction, balanceAfter };
+  });
+
   // Group transactions by date
-  const groupedTransactions = transactions.reduce((groups, transaction) => {
+  const groupedTransactions = transactionsWithBalance.reduce((groups, transaction) => {
     const date = transaction.date;
     if (!groups[date]) {
       groups[date] = [];
     }
     groups[date].push(transaction);
     return groups;
-  }, {} as Record<string, Transaction[]>);
+  }, {} as Record<string, (Transaction & { balanceAfter: number })[]>);
+
+  // Sort dates descending
+  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
 
   return (
     <Card className="glass">
@@ -42,12 +68,12 @@ export function TransactionList({ transactions, onDelete, isDeleting }: Transact
       <CardContent className="p-0">
         <ScrollArea className="h-[400px]">
           <div className="space-y-4 p-4 pt-0">
-            {Object.entries(groupedTransactions).map(([date, txns]) => (
+            {sortedDates.map((date) => (
               <div key={date} className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground sticky top-0 bg-card/80 backdrop-blur py-1">
                   {formatDate(date)}
                 </p>
-                {txns.map((transaction, index) => (
+                {groupedTransactions[date].map((transaction, index) => (
                   <div
                     key={transaction.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors animate-fade-in"
@@ -67,6 +93,12 @@ export function TransactionList({ transactions, onDelete, isDeleting }: Transact
                             {transaction.description}
                           </p>
                         )}
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Số dư: <span className={cn(
+                            "font-medium",
+                            transaction.balanceAfter >= 0 ? 'text-income' : 'text-expense'
+                          )}>{formatCurrency(transaction.balanceAfter)}</span>
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
