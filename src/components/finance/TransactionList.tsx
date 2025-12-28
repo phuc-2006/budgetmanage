@@ -13,7 +13,7 @@ interface TransactionListProps {
   currentBalance: number;
 }
 
-export function TransactionList({ transactions, onDelete, isDeleting, currentBalance }: TransactionListProps) {
+export function TransactionList({ transactions, onDelete, isDeleting, currentBalance = 0 }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
       <Card className="glass">
