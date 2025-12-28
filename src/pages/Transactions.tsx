@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
 import { MonthSelector } from '@/components/finance/MonthSelector';
@@ -10,27 +11,17 @@ import { AddTransactionDialog } from '@/components/finance/AddTransactionDialog'
 import { Transaction } from '@/types/finance';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-
-const ITEMS_PER_PAGE = 10;
 
 export default function Transactions() {
   const { user, loading } = useAuth();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [currentPage, setCurrentPage] = useState(1);
 
   const {
     transactions,
     isLoading,
     deleteTransaction,
+    balance,
   } = useTransactions(month, year);
 
   if (loading) {
@@ -45,41 +36,144 @@ export default function Transactions() {
     return <Navigate to="/auth" replace />;
   }
 
-  // Sort transactions by date descending
-  const sortedTransactions = [...transactions].sort((a, b) => {
+  // Separate income and expense transactions
+  const incomeTransactions = transactions.filter(t => t.type === 'income');
+  const expenseTransactions = transactions.filter(t => t.type === 'expense');
+
+  // Sort by date descending
+  const sortByDate = (a: Transaction, b: Transaction) => {
     const dateCompare = b.date.localeCompare(a.date);
     if (dateCompare !== 0) return dateCompare;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(sortedTransactions.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedTransactions = sortedTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-  // Group by date
-  const groupedTransactions = paginatedTransactions.reduce((groups, transaction) => {
-    const date = transaction.date;
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(transaction);
-    return groups;
-  }, {} as Record<string, Transaction[]>);
-
-  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
   };
 
-  // Reset to page 1 when month changes
+  const sortedIncome = [...incomeTransactions].sort(sortByDate);
+  const sortedExpense = [...expenseTransactions].sort(sortByDate);
+
+  // Calculate running balance for each transaction
+  const allSorted = [...transactions].sort(sortByDate);
+  
+  const getBalanceAfter = (transaction: Transaction) => {
+    let runningBalance = balance;
+    for (const t of allSorted) {
+      if (t.id === transaction.id) break;
+      if (t.type === 'income') {
+        runningBalance -= Number(t.amount);
+      } else {
+        runningBalance += Number(t.amount);
+      }
+    }
+    return runningBalance;
+  };
+
+  // Group by date
+  const groupByDate = (txns: Transaction[]) => {
+    return txns.reduce((groups, transaction) => {
+      const date = transaction.date;
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(transaction);
+      return groups;
+    }, {} as Record<string, Transaction[]>);
+  };
+
+  const groupedIncome = groupByDate(sortedIncome);
+  const groupedExpense = groupByDate(sortedExpense);
+
+  const incomeDates = Object.keys(groupedIncome).sort((a, b) => b.localeCompare(a));
+  const expenseDates = Object.keys(groupedExpense).sort((a, b) => b.localeCompare(a));
+
+  const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpense = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+
   const handleMonthChange = (m: number, y: number) => {
     setMonth(m);
     setYear(y);
-    setCurrentPage(1);
+  };
+
+  const renderTransactionItem = (transaction: Transaction, index: number) => {
+    const balanceAfter = getBalanceAfter(transaction);
+    
+    return (
+      <div
+        key={transaction.id}
+        className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors animate-fade-in"
+        style={{ animationDelay: `${index * 0.03}s` }}
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div
+            className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-lg"
+            style={{ backgroundColor: transaction.category?.color + '20' }}
+          >
+            {transaction.category?.icon || '📝'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium truncate">{transaction.category?.name || 'Không có danh mục'}</p>
+            {transaction.description && (
+              <p className="text-sm text-muted-foreground truncate">
+                {transaction.description}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Số dư: <span className={cn(
+                "font-medium",
+                balanceAfter >= 0 ? 'text-income' : 'text-expense'
+              )}>{formatCurrency(balanceAfter)}</span>
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <p
+            className={cn(
+              "font-bold",
+              transaction.type === 'income' ? 'text-income' : 'text-expense'
+            )}
+          >
+            {transaction.type === 'income' ? '+' : '-'}
+            {formatCurrency(Number(transaction.amount))}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => deleteTransaction.mutate(transaction.id)}
+            disabled={deleteTransaction.isPending}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTransactionList = (
+    groupedTxns: Record<string, Transaction[]>,
+    dates: string[],
+    emptyMessage: string
+  ) => {
+    if (dates.length === 0) {
+      return (
+        <div className="p-8 text-center text-muted-foreground">
+          {emptyMessage}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4 p-4">
+        {dates.map((date) => (
+          <div key={date} className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground sticky top-0 bg-card/80 backdrop-blur py-1">
+              {formatDate(date)}
+            </p>
+            {groupedTxns[date].map((transaction, index) => 
+              renderTransactionItem(transaction, index)
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -120,101 +214,53 @@ export default function Transactions() {
             </CardContent>
           </Card>
         ) : (
-          <>
-            <div className="space-y-4">
-              {sortedDates.map((date) => (
-                <div key={date} className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {formatDate(date)}
-                  </p>
-                  {groupedTransactions[date].map((transaction, index) => (
-                    <Card
-                      key={transaction.id}
-                      className="glass hover:bg-secondary/50 transition-colors animate-fade-in"
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                              style={{ backgroundColor: transaction.category?.color + '20' }}
-                            >
-                              {transaction.category?.icon || '📝'}
-                            </div>
-                            <div>
-                              <p className="font-medium">{transaction.category?.name || 'Không có danh mục'}</p>
-                              {transaction.description && (
-                                <p className="text-sm text-muted-foreground">
-                                  {transaction.description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <p
-                              className={cn(
-                                "font-bold text-lg",
-                                transaction.type === 'income' ? 'text-income' : 'text-expense'
-                              )}
-                            >
-                              {transaction.type === 'income' ? '+' : '-'}
-                              {formatCurrency(Number(transaction.amount))}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-muted-foreground hover:text-destructive"
-                              onClick={() => deleteTransaction.mutate(transaction.id)}
-                              disabled={deleteTransaction.isPending}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Income Column */}
+            <Card className="glass">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-income" />
+                    </div>
+                    <CardTitle className="text-lg">Thu nhập</CardTitle>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-income">+{formatCurrency(totalIncome)}</p>
+                    <p className="text-xs text-muted-foreground">{incomeTransactions.length} giao dịch</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[500px]">
+                  {renderTransactionList(groupedIncome, incomeDates, 'Chưa có thu nhập trong tháng này')}
+                </ScrollArea>
+              </CardContent>
+            </Card>
 
-            {totalPages > 1 && (
-              <Pagination className="mt-6">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      className={cn(
-                        "cursor-pointer",
-                        currentPage === 1 && "pointer-events-none opacity-50"
-                      )}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => handlePageChange(page)}
-                        isActive={page === currentPage}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      className={cn(
-                        "cursor-pointer",
-                        currentPage === totalPages && "pointer-events-none opacity-50"
-                      )}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
-          </>
+            {/* Expense Column */}
+            <Card className="glass">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
+                      <TrendingDown className="w-4 h-4 text-expense" />
+                    </div>
+                    <CardTitle className="text-lg">Chi tiêu</CardTitle>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-expense">-{formatCurrency(totalExpense)}</p>
+                    <p className="text-xs text-muted-foreground">{expenseTransactions.length} giao dịch</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[500px]">
+                  {renderTransactionList(groupedExpense, expenseDates, 'Chưa có chi tiêu trong tháng này')}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </main>
     </div>
