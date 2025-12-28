@@ -60,15 +60,21 @@ export function TransactionList({ transactions, onDelete, isDeleting, currentBal
   // Sort dates descending
   const sortedDates = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
 
+  // Only show first 5 transactions on dashboard
+  const recentDates = sortedDates.slice(0, 3);
+
   return (
     <Card className="glass">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Giao dịch gần đây</CardTitle>
+        <a href="/transactions" className="text-sm text-primary hover:underline">
+          Xem tất cả
+        </a>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[350px]">
           <div className="space-y-4 p-4 pt-0">
-            {sortedDates.map((date) => (
+            {recentDates.map((date) => (
               <div key={date} className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground sticky top-0 bg-card/80 backdrop-blur py-1">
                   {formatDate(date)}
