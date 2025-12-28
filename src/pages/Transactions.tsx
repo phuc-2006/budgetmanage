@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
-import { ArrowLeft, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
 import { MonthSelector } from '@/components/finance/MonthSelector';
-import { AddTransactionDialog } from '@/components/finance/AddTransactionDialog';
 import { Transaction } from '@/types/finance';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function Transactions() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -178,19 +178,7 @@ export default function Transactions() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-xl font-bold">Tất cả giao dịch</h1>
-          </div>
-          <AddTransactionDialog />
-        </div>
-      </header>
+      <AppHeader onSignOut={signOut} />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

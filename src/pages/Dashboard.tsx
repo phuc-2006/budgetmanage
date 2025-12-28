@@ -1,16 +1,15 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { LogOut, Wallet } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useMonthlyTrend } from '@/hooks/useMonthlyTrend';
 import { BalanceCard } from '@/components/finance/BalanceCard';
-import { AddTransactionDialog } from '@/components/finance/AddTransactionDialog';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { ExpenseChart } from '@/components/finance/ExpenseChart';
 import { TrendChart } from '@/components/finance/TrendChart';
 import { MonthSelector } from '@/components/finance/MonthSelector';
+import { AppHeader } from '@/components/layout/AppHeader';
+
 export default function Dashboard() {
   const {
     user,
@@ -38,22 +37,7 @@ export default function Dashboard() {
     return <Navigate to="/auth" replace />;
   }
   return <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 glass border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <h1 className="text-xl font-bold hidden sm:block">Quản lý chi tiêu</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <AddTransactionDialog />
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader onSignOut={signOut} />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
