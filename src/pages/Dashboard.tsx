@@ -61,6 +61,7 @@ export default function Dashboard() {
             transactions={transactions} 
             onDelete={(id) => deleteTransaction.mutate(id)}
             isDeleting={deleteTransaction.isPending}
+            currentBalance={balance}
           />
           <ExpenseChart transactions={transactions} />
         </div>
