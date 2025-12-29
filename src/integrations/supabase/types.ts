@@ -85,6 +85,83 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          loan_id: string
+          notes: string | null
+          payment_date: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          loan_id: string
+          notes?: string | null
+          payment_date?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          loan_id?: string
+          notes?: string | null
+          payment_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loans: {
+        Row: {
+          amount: number
+          borrower_name: string
+          created_at: string
+          due_date: string | null
+          id: string
+          interest_rate: number | null
+          notes: string | null
+          start_date: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          borrower_name: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          notes?: string | null
+          start_date?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          borrower_name?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          notes?: string | null
+          start_date?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
