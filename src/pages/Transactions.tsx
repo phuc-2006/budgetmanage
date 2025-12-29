@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useSettings } from '@/hooks/useSettings';
 import { MonthSelector } from '@/components/finance/MonthSelector';
 import { Transaction } from '@/types/finance';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -14,6 +15,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function Transactions() {
   const { user, loading, signOut } = useAuth();
+  const { showDayOfWeek } = useSettings();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -165,7 +167,7 @@ export default function Transactions() {
         {dates.map((date) => (
           <div key={date} className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground sticky top-0 bg-card/80 backdrop-blur py-1">
-              {formatDate(date)}
+              {formatDate(date, showDayOfWeek)}
             </p>
             {groupedTxns[date].map((transaction, index) => 
               renderTransactionItem(transaction, index)

@@ -7,13 +7,22 @@ export function formatCurrency(amount: number, currency: string = 'VND'): string
   }).format(amount);
 }
 
-export function formatDate(dateString: string): string {
+export function formatDate(dateString: string, showDayOfWeek: boolean = false): string {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('vi-VN', {
+  const formattedDate = new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   }).format(date);
+  
+  if (showDayOfWeek) {
+    const dayName = new Intl.DateTimeFormat('vi-VN', { weekday: 'long' }).format(date);
+    // Capitalize first letter
+    const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+    return `${capitalizedDay}, ${formattedDate}`;
+  }
+  
+  return formattedDate;
 }
 
 export function formatMonthYear(month: number, year: number): string {
