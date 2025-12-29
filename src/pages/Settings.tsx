@@ -1,15 +1,18 @@
 import { Navigate } from 'react-router-dom';
-import { Moon, Sun, Calendar } from 'lucide-react';
+import { Moon, Sun, Calendar, Download, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
+import { useExportTransactions } from '@/hooks/useExportTransactions';
 import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function Settings() {
   const { user, loading, signOut } = useAuth();
   const { showDayOfWeek, setShowDayOfWeek, theme, setTheme } = useSettings();
+  const { exportToExcel, isLoading: isExporting, transactionCount } = useExportTransactions();
 
   if (loading) {
     return (
@@ -74,6 +77,44 @@ export default function Settings() {
                 checked={showDayOfWeek}
                 onCheckedChange={setShowDayOfWeek}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle className="text-lg">Dữ liệu</CardTitle>
+            <CardDescription>Quản lý và xuất dữ liệu giao dịch</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Export to Excel */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Download className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label className="font-medium">Xuất file Excel</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Tải xuống toàn bộ {transactionCount} giao dịch dưới dạng file Excel
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={exportToExcel} 
+                disabled={isExporting || transactionCount === 0}
+                variant="outline"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Đang xuất...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Tải xuống
+                  </>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
