@@ -1,5 +1,6 @@
+import { useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Moon, Sun, Calendar, Download, Loader2 } from 'lucide-react';
+import { Moon, Sun, Calendar, Download, Upload, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -7,12 +8,26 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
 import { useExportTransactions } from '@/hooks/useExportTransactions';
+import { useImportTransactions } from '@/hooks/useImportTransactions';
 import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function Settings() {
   const { user, loading, signOut } = useAuth();
   const { showDayOfWeek, setShowDayOfWeek, theme, setTheme } = useSettings();
   const { exportToExcel, isLoading: isExporting, transactionCount } = useExportTransactions();
+  const { importFromExcel, isImporting } = useImportTransactions();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await importFromExcel(file);
+      // Reset input to allow re-uploading same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -115,6 +130,46 @@ export default function Settings() {
                   </>
                 )}
               </Button>
+            </div>
+
+            {/* Import from Excel */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Upload className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label className="font-medium">Nhập từ file Excel</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Tải lên file Excel để nhập giao dịch mới
+                  </p>
+                </div>
+              </div>
+              <div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  id="excel-upload"
+                />
+                <Button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={isImporting}
+                  variant="outline"
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang nhập...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Tải lên
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
