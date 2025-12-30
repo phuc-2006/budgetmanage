@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Wallet, LogOut, LayoutDashboard, List, Settings } from 'lucide-react';
+import { Menu, Wallet, LogOut, LayoutDashboard, List, Settings, HandCoins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ interface AppHeaderProps {
 const menuItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Tất cả giao dịch', url: '/transactions', icon: List },
+  { title: 'Khoản nợ', url: '/debts', icon: HandCoins },
   { title: 'Cài đặt', url: '/settings', icon: Settings },
 ];
 
