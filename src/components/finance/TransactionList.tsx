@@ -94,12 +94,10 @@ export function TransactionList({ transactions, onDelete, isDeleting, currentBal
                         {transaction.category?.icon || '📝'}
                       </div>
                       <div>
-                        <p className="font-medium">{transaction.category?.name || 'Không có danh mục'}</p>
-                        {transaction.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {transaction.description}
-                          </p>
-                        )}
+                        <p className="font-medium">{transaction.description || transaction.category?.name || 'Không có mô tả'}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {transaction.category?.name || 'Không có danh mục'}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           Số dư: <span className={cn(
                             "font-medium",
