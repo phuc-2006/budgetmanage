@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SettingsProvider } from "@/hooks/useSettings";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
+import Debts from "./pages/Debts";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
+              <Route path="/debts" element={<Debts />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="*" element={<NotFound />} />

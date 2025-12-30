@@ -85,6 +85,71 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      debts: {
+        Row: {
+          amount: number
+          contact_id: string
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          is_paid: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          contact_id: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          is_paid?: boolean
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          contact_id?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          is_paid?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_payments: {
         Row: {
           amount: number
