@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Users } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,14 +46,13 @@ export function AddLoanDialog() {
   };
 
   const totalAmount = borrowers.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+  const validBorrowers = borrowers.filter(b => b.name.trim() && parseFloat(b.amount) > 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validBorrowers = borrowers.filter(b => b.name.trim() && parseFloat(b.amount) > 0);
     if (validBorrowers.length === 0) return;
 
-    // Add each borrower as a separate loan
     for (const borrower of validBorrowers) {
       await addLoan.mutateAsync({
         borrower_name: borrower.name.trim(),
@@ -79,45 +77,42 @@ export function AddLoanDialog() {
           Thêm khoản nợ
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Thêm khoản nợ mới
-          </DialogTitle>
+          <DialogTitle>Thêm khoản nợ mới</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Người nợ</Label>
+              <Label>Người nợ & Số tiền (VNĐ)</Label>
               <Button 
                 type="button" 
-                variant="outline" 
+                variant="ghost" 
                 size="sm" 
                 onClick={addBorrower}
-                className="gap-1"
+                className="h-7 text-xs gap-1"
               >
                 <Plus className="w-3 h-3" />
                 Thêm người
               </Button>
             </div>
             
-            <div className="space-y-2 max-h-[200px] overflow-y-auto">
-              {borrowers.map((borrower, index) => (
+            <div className="space-y-2">
+              {borrowers.map((borrower) => (
                 <div key={borrower.id} className="flex gap-2 items-center">
                   <Input
-                    placeholder="Tên người nợ"
+                    placeholder="Tên"
                     value={borrower.name}
                     onChange={(e) => updateBorrower(borrower.id, 'name', e.target.value)}
                     className="flex-1"
                   />
                   <Input
                     type="number"
-                    placeholder="Số tiền"
+                    placeholder="0"
                     value={borrower.amount}
                     onChange={(e) => updateBorrower(borrower.id, 'amount', e.target.value)}
-                    className="w-32"
+                    className="w-28 text-right font-bold"
                     min="0"
                   />
                   {borrowers.length > 1 && (
@@ -125,7 +120,7 @@ export function AddLoanDialog() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
                       onClick={() => removeBorrower(borrower.id)}
                     >
                       <X className="w-4 h-4" />
@@ -136,7 +131,7 @@ export function AddLoanDialog() {
             </div>
             
             {totalAmount > 0 && (
-              <div className="text-sm text-muted-foreground text-right">
+              <div className="text-sm text-muted-foreground text-right pt-1">
                 Tổng: <span className="font-semibold text-foreground">{totalAmount.toLocaleString('vi-VN')}đ</span>
               </div>
             )}
@@ -154,22 +149,22 @@ export function AddLoanDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Ghi chú (ví dụ: Ăn lẩu, Mua chung đồ...)</Label>
+            <Label htmlFor="notes">Ghi chú (tùy chọn)</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Mô tả chi tiêu chung..."
+              placeholder="Mô tả chi tiết..."
               rows={2}
             />
           </div>
 
           <Button 
             type="submit" 
-            className="w-full gradient-primary" 
-            disabled={addLoan.isPending}
+            className="w-full gradient-primary"
+            disabled={addLoan.isPending || validBorrowers.length === 0}
           >
-            {addLoan.isPending ? 'Đang thêm...' : `Thêm ${borrowers.filter(b => b.name.trim() && b.amount).length} khoản nợ`}
+            {addLoan.isPending ? 'Đang xử lý...' : `Thêm khoản nợ`}
           </Button>
         </form>
       </DialogContent>
