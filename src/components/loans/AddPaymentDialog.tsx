@@ -62,12 +62,12 @@ export function AddPaymentDialog({ loan }: AddPaymentDialogProps) {
           <DialogTitle>Ghi nhận thanh toán</DialogTitle>
         </DialogHeader>
         <div className="text-sm text-muted-foreground mb-4">
-          <p>Người vay: <span className="font-medium text-foreground">{loan.borrower_name}</span></p>
+          <p>Người nợ: <span className="font-medium text-foreground">{loan.borrower_name}</span></p>
           <p>Còn lại: <span className="font-medium text-foreground">{formatCurrency(loan.remaining)}</span></p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="payment-amount">Số tiền thanh toán *</Label>
+            <Label htmlFor="payment-amount">Số tiền trả *</Label>
             <Input
               id="payment-amount"
               type="number"

@@ -18,7 +18,7 @@ interface AppHeaderProps {
 const menuItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Tất cả giao dịch', url: '/transactions', icon: List },
-  { title: 'Khoản cho vay', url: '/loans', icon: HandCoins },
+  { title: 'Khoản nợ', url: '/loans', icon: HandCoins },
   { title: 'Cài đặt', url: '/settings', icon: Settings },
 ];
 
