@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,9 +68,9 @@ export function TransactionList({ transactions, onDelete, isDeleting, currentBal
     <Card className="glass">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Giao dịch gần đây</CardTitle>
-        <a href="/transactions" className="text-sm text-primary hover:underline">
+        <Link to="/transactions" className="text-sm text-primary hover:underline">
           Xem tất cả
-        </a>
+        </Link>
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[350px]">
