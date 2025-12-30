@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { Plus, CalendarIcon } from 'lucide-react';
+import { Plus, X, Users } from 'lucide-react';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -18,35 +14,59 @@ import {
 } from '@/components/ui/dialog';
 import { useLoans } from '@/hooks/useLoans';
 
+interface Borrower {
+  id: string;
+  name: string;
+  amount: string;
+}
+
 export function AddLoanDialog() {
   const [open, setOpen] = useState(false);
-  const [borrowerName, setBorrowerName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [interestRate, setInterestRate] = useState('0');
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [borrowers, setBorrowers] = useState<Borrower[]>([
+    { id: crypto.randomUUID(), name: '', amount: '' }
+  ]);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
 
   const { addLoan } = useLoans();
 
+  const addBorrower = () => {
+    setBorrowers([...borrowers, { id: crypto.randomUUID(), name: '', amount: '' }]);
+  };
+
+  const removeBorrower = (id: string) => {
+    if (borrowers.length > 1) {
+      setBorrowers(borrowers.filter(b => b.id !== id));
+    }
+  };
+
+  const updateBorrower = (id: string, field: 'name' | 'amount', value: string) => {
+    setBorrowers(borrowers.map(b => 
+      b.id === id ? { ...b, [field]: value } : b
+    ));
+  };
+
+  const totalAmount = borrowers.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!borrowerName.trim() || !amount) return;
+    
+    const validBorrowers = borrowers.filter(b => b.name.trim() && parseFloat(b.amount) > 0);
+    if (validBorrowers.length === 0) return;
 
-    await addLoan.mutateAsync({
-      borrower_name: borrowerName.trim(),
-      amount: parseFloat(amount),
-      interest_rate: parseFloat(interestRate) || 0,
-      start_date: format(startDate, 'yyyy-MM-dd'),
-      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
-      notes: notes.trim() || undefined,
-    });
+    // Add each borrower as a separate loan
+    for (const borrower of validBorrowers) {
+      await addLoan.mutateAsync({
+        borrower_name: borrower.name.trim(),
+        amount: parseFloat(borrower.amount),
+        interest_rate: 0,
+        start_date: date,
+        notes: notes.trim() || undefined,
+      });
+    }
 
-    setBorrowerName('');
-    setAmount('');
-    setInterestRate('0');
-    setStartDate(new Date());
-    setDueDate(undefined);
+    setBorrowers([{ id: crypto.randomUUID(), name: '', amount: '' }]);
+    setDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setOpen(false);
   };
@@ -54,113 +74,102 @@ export function AddLoanDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Thêm khoản cho vay
+        <Button className="gradient-primary shadow-lg hover:shadow-xl transition-shadow">
+          <Plus className="w-4 h-4 mr-2" />
+          Thêm khoản nợ
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Thêm khoản cho vay mới</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Thêm khoản nợ mới
+          </DialogTitle>
         </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Người nợ</Label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={addBorrower}
+                className="gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                Thêm người
+              </Button>
+            </div>
+            
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              {borrowers.map((borrower, index) => (
+                <div key={borrower.id} className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Tên người nợ"
+                    value={borrower.name}
+                    onChange={(e) => updateBorrower(borrower.id, 'name', e.target.value)}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Số tiền"
+                    value={borrower.amount}
+                    onChange={(e) => updateBorrower(borrower.id, 'amount', e.target.value)}
+                    className="w-32"
+                    min="0"
+                  />
+                  {borrowers.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeBorrower(borrower.id)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {totalAmount > 0 && (
+              <div className="text-sm text-muted-foreground text-right">
+                Tổng: <span className="font-semibold text-foreground">{totalAmount.toLocaleString('vi-VN')}đ</span>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="borrower">Tên người vay *</Label>
+            <Label htmlFor="date">Ngày</Label>
             <Input
-              id="borrower"
-              value={borrowerName}
-              onChange={(e) => setBorrowerName(e.target.value)}
-              placeholder="Nhập tên người vay"
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Số tiền cho vay *</Label>
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              min="0"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="interest">Lãi suất (%/năm)</Label>
-            <Input
-              id="interest"
-              type="number"
-              value={interestRate}
-              onChange={(e) => setInterestRate(e.target.value)}
-              placeholder="0"
-              min="0"
-              step="0.1"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Ngày cho vay</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(startDate, 'dd/MM/yyyy', { locale: vi })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => date && setStartDate(date)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Hạn trả</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dueDate && "text-muted-foreground"
-                  )}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dueDate}
-                    onSelect={setDueDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Ghi chú</Label>
+            <Label htmlFor="notes">Ghi chú (ví dụ: Ăn lẩu, Mua chung đồ...)</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Thêm ghi chú (không bắt buộc)"
+              placeholder="Mô tả chi tiêu chung..."
               rows={2}
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={addLoan.isPending}>
-            {addLoan.isPending ? 'Đang thêm...' : 'Thêm khoản cho vay'}
+          <Button 
+            type="submit" 
+            className="w-full gradient-primary" 
+            disabled={addLoan.isPending}
+          >
+            {addLoan.isPending ? 'Đang thêm...' : `Thêm ${borrowers.filter(b => b.name.trim() && b.amount).length} khoản nợ`}
           </Button>
         </form>
       </DialogContent>

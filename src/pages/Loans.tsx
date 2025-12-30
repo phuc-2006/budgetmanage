@@ -32,9 +32,9 @@ export default function Loans() {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold">Quản lý khoản cho vay</h2>
+            <h2 className="text-2xl font-bold">Quản lý khoản nợ</h2>
             <p className="text-muted-foreground text-sm">
-              Theo dõi các khoản tiền bạn cho người khác vay
+              Theo dõi các khoản tiền bạn bè còn nợ bạn
             </p>
           </div>
           <AddLoanDialog />
@@ -50,14 +50,14 @@ export default function Loans() {
           <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
         ) : loans.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">Bạn chưa có khoản cho vay nào</p>
+            <p className="text-muted-foreground mb-4">Bạn chưa có khoản nợ nào</p>
             <AddLoanDialog />
           </div>
         ) : (
           <div className="space-y-6">
             {activeLoans.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Đang cho vay ({activeLoans.length})</h3>
+                <h3 className="text-lg font-semibold">Còn nợ ({activeLoans.length})</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   {activeLoans.map(loan => (
                     <LoanCard key={loan.id} loan={loan} />

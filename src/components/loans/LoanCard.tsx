@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Trash2, ChevronDown, ChevronUp, User, Calendar, Percent, CheckCircle } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, User, Calendar, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,6 @@ export function LoanCard({ loan }: LoanCardProps) {
   const { deleteLoan, deletePayment, updateLoan } = useLoans();
 
   const progressPercent = (loan.total_paid / Number(loan.amount)) * 100;
-  const isOverdue = loan.due_date && new Date(loan.due_date) < new Date() && loan.status === 'active';
 
   const handleMarkAsPaid = () => {
     updateLoan.mutate({ id: loan.id, status: 'paid' });
@@ -31,10 +30,7 @@ export function LoanCard({ loan }: LoanCardProps) {
     if (loan.status === 'paid') {
       return <Badge className="bg-income/20 text-income border-income/30">Đã trả</Badge>;
     }
-    if (isOverdue) {
-      return <Badge variant="destructive">Quá hạn</Badge>;
-    }
-    return <Badge variant="secondary">Đang vay</Badge>;
+    return <Badge variant="secondary">Còn nợ</Badge>;
   };
 
   return (
@@ -57,21 +53,6 @@ export function LoanCard({ loan }: LoanCardProps) {
                 <Calendar className="w-3 h-3" />
                 {format(new Date(loan.start_date), 'dd/MM/yyyy', { locale: vi })}
               </div>
-              {loan.due_date && (
-                <div className={cn(
-                  "flex items-center gap-1",
-                  isOverdue && "text-destructive"
-                )}>
-                  <Calendar className="w-3 h-3" />
-                  Hạn: {format(new Date(loan.due_date), 'dd/MM/yyyy', { locale: vi })}
-                </div>
-              )}
-              {loan.interest_rate > 0 && (
-                <div className="flex items-center gap-1">
-                  <Percent className="w-3 h-3" />
-                  {loan.interest_rate}%/năm
-                </div>
-              )}
             </div>
 
             {/* Progress */}
