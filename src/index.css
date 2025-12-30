@@ -119,6 +119,12 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Be Vietnam Pro', sans-serif;
   }
+
+  /* Style number input spinners for dark mode */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    @apply dark:invert;
+  }
 }
 
 @layer utilities {
