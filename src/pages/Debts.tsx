@@ -33,14 +33,7 @@ export default function Debts() {
     return <Navigate to="/auth" replace />;
   }
 
-  // Filter contacts with unpaid debts
-  const contactsWithDebts = contactsWithBalance.filter(c => c.balance !== 0);
-
-  // Get debts for selected contact
-  const getContactDebts = (contactId: string) => {
-    return debts.filter(d => d.contact_id === contactId && !d.is_paid);
-  };
-
+  // Sort by date
   const sortByDate = (a: DebtWithContact, b: DebtWithContact) => {
     const dateCompare = b.date.localeCompare(a.date);
     if (dateCompare !== 0) return dateCompare;
@@ -91,6 +84,15 @@ export default function Debts() {
         </p>
       </div>
     );
+  };
+
+  // Get lend and borrow debts for selected contact
+  const getContactLendDebts = (contactId: string) => {
+    return debts.filter(d => d.contact_id === contactId && !d.is_paid && d.type === 'lend').sort(sortByDate);
+  };
+
+  const getContactBorrowDebts = (contactId: string) => {
+    return debts.filter(d => d.contact_id === contactId && !d.is_paid && d.type === 'borrow').sort(sortByDate);
   };
 
   const renderDebtItem = (debt: DebtWithContact, index: number) => {
@@ -159,143 +161,145 @@ export default function Debts() {
   const renderContactDebts = () => {
     if (!selectedContact) return null;
     
-    const contactDebts = getContactDebts(selectedContact.id).sort(sortByDate);
-    const groupedDebts = groupByDate(contactDebts);
-    const dates = Object.keys(groupedDebts).sort((a, b) => b.localeCompare(a));
+    const lendDebts = getContactLendDebts(selectedContact.id);
+    const borrowDebts = getContactBorrowDebts(selectedContact.id);
     
-    const lendTotal = contactDebts.filter(d => d.type === 'lend').reduce((sum, d) => sum + Number(d.amount), 0);
-    const borrowTotal = contactDebts.filter(d => d.type === 'borrow').reduce((sum, d) => sum + Number(d.amount), 0);
+    const groupedLend = groupByDate(lendDebts);
+    const groupedBorrow = groupByDate(borrowDebts);
+    
+    const lendDates = Object.keys(groupedLend).sort((a, b) => b.localeCompare(a));
+    const borrowDates = Object.keys(groupedBorrow).sort((a, b) => b.localeCompare(a));
+    
+    const lendTotal = lendDebts.reduce((sum, d) => sum + Number(d.amount), 0);
+    const borrowTotal = borrowDebts.reduce((sum, d) => sum + Number(d.amount), 0);
+
+    const renderDebtList = (
+      groupedItems: Record<string, DebtWithContact[]>,
+      dates: string[],
+      emptyMessage: string
+    ) => {
+      if (dates.length === 0) {
+        return (
+          <div className="p-8 text-center text-muted-foreground">
+            {emptyMessage}
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-4 p-4">
+          {dates.map((date) => (
+            <div key={date} className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground sticky top-0 bg-card/80 backdrop-blur py-1">
+                {formatDate(date, showDayOfWeek)}
+              </p>
+              {groupedItems[date].map((debt, index) => 
+                renderDebtItem(debt, index)
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    return (
+      <>
+        <div className="flex items-center gap-3 mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setSelectedContact(null)}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h3 className="text-lg font-semibold">{selectedContact.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              Số dư: <span className={cn("font-medium", selectedContact.balance > 0 ? 'text-income' : 'text-expense')}>
+                {selectedContact.balance > 0 ? '+' : ''}{formatCurrency(selectedContact.balance)}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Lend Column */}
+          <Card className="glass">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-income" />
+                  </div>
+                  <CardTitle className="text-lg">Cho vay</CardTitle>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-income">+{formatCurrency(lendTotal)}</p>
+                  <p className="text-xs text-muted-foreground">{lendDebts.length} khoản</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[400px]">
+                {renderDebtList(groupedLend, lendDates, 'Chưa cho vay')}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Borrow Column */}
+          <Card className="glass">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
+                    <TrendingDown className="w-4 h-4 text-expense" />
+                  </div>
+                  <CardTitle className="text-lg">Đi vay</CardTitle>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-expense">-{formatCurrency(borrowTotal)}</p>
+                  <p className="text-xs text-muted-foreground">{borrowDebts.length} khoản</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[400px]">
+                {renderDebtList(groupedBorrow, borrowDates, 'Chưa đi vay')}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    );
+  };
+
+  const renderContactsList = () => {
+    // All contacts with unpaid debts (balance != 0)
+    const activeContacts = contactsWithBalance.filter(c => c.balance !== 0);
 
     return (
       <Card className="glass">
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSelectedContact(null)}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1">
-              <CardTitle className="text-lg">{selectedContact.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {contactDebts.length} khoản nợ chưa trả
-              </p>
-            </div>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Danh sách người nợ</CardTitle>
+            <p className="text-sm text-muted-foreground">{activeContacts.length} người</p>
           </div>
         </CardHeader>
-        <CardContent className="pt-4 space-y-4">
-          {/* Summary for this contact */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg bg-income/10">
-              <p className="text-sm text-muted-foreground">Họ nợ bạn</p>
-              <p className="text-xl font-bold text-income">+{formatCurrency(lendTotal)}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-expense/10">
-              <p className="text-sm text-muted-foreground">Bạn nợ họ</p>
-              <p className="text-xl font-bold text-expense">-{formatCurrency(borrowTotal)}</p>
-            </div>
-          </div>
-
-          <ScrollArea className="h-[400px]">
-            {dates.length === 0 ? (
+        <CardContent className="p-0">
+          <ScrollArea className="h-[500px]">
+            {activeContacts.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
-                Không có khoản nợ nào
+                Chưa có ai trong danh sách nợ
               </div>
             ) : (
-              <div className="space-y-4">
-                {dates.map((date) => (
-                  <div key={date} className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground sticky top-0 bg-card/80 backdrop-blur py-1">
-                      {formatDate(date, showDayOfWeek)}
-                    </p>
-                    {groupedDebts[date].map((debt, index) => 
-                      renderDebtItem(debt, index)
-                    )}
-                  </div>
-                ))}
+              <div className="space-y-2 p-4">
+                {activeContacts.map(contact => renderContactCard(contact))}
               </div>
             )}
           </ScrollArea>
         </CardContent>
       </Card>
-    );
-  };
-
-  const renderContactsList = () => {
-    // Separate contacts by balance type
-    const lendContacts = contactsWithBalance.filter(c => c.balance > 0);
-    const borrowContacts = contactsWithBalance.filter(c => c.balance < 0);
-
-    const totalLendAmount = lendContacts.reduce((sum, c) => sum + c.balance, 0);
-    const totalBorrowAmount = Math.abs(borrowContacts.reduce((sum, c) => sum + c.balance, 0));
-
-    return (
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Lend Column - Họ nợ mình */}
-        <Card className="glass">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-income" />
-                </div>
-                <CardTitle className="text-lg">Cho vay</CardTitle>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-income">+{formatCurrency(totalLendAmount)}</p>
-                <p className="text-xs text-muted-foreground">{lendContacts.length} người</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[500px]">
-              {lendContacts.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  Chưa có ai nợ bạn
-                </div>
-              ) : (
-                <div className="space-y-2 p-4">
-                  {lendContacts.map(contact => renderContactCard(contact))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Borrow Column - Mình nợ họ */}
-        <Card className="glass">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
-                  <TrendingDown className="w-4 h-4 text-expense" />
-                </div>
-                <CardTitle className="text-lg">Đi vay</CardTitle>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-expense">-{formatCurrency(totalBorrowAmount)}</p>
-                <p className="text-xs text-muted-foreground">{borrowContacts.length} người</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[500px]">
-              {borrowContacts.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  Bạn chưa nợ ai
-                </div>
-              ) : (
-                <div className="space-y-2 p-4">
-                  {borrowContacts.map(contact => renderContactCard(contact))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
     );
   };
 
