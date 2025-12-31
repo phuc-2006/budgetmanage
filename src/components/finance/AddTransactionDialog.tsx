@@ -14,11 +14,20 @@ import { cn } from '@/lib/utils';
 
 export function AddTransactionDialog() {
   const [open, setOpen] = useState(false);
+
+  const getLocalDateInputValue = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateInputValue());
   
   const { expenseCategories, incomeCategories } = useCategories();
   const { addTransaction } = useTransactions();
@@ -42,7 +51,7 @@ export function AddTransactionDialog() {
     setAmount('');
     setCategoryId('');
     setDescription('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(getLocalDateInputValue());
   };
 
   return (

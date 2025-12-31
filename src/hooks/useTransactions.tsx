@@ -27,6 +27,15 @@ export function useTransactions(month?: number, year?: number) {
     queryKey: ['transactions', user?.id, selectedMonth, selectedYear],
     queryFn: async () => {
       if (!user) return [];
+
+      if (import.meta.env.DEV) {
+        console.debug('[useTransactions] range', {
+          selectedMonth,
+          selectedYear,
+          startDate,
+          endDate,
+        });
+      }
       
       const { data, error } = await supabase
         .from('transactions')
