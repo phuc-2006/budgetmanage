@@ -12,8 +12,16 @@ export function useTransactions(month?: number, year?: number) {
   const selectedMonth = month ?? currentDate.getMonth() + 1;
   const selectedYear = year ?? currentDate.getFullYear();
 
-  const startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString().split('T')[0];
-  const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+  // Format date without timezone conversion (toISOString converts to UTC which shifts dates)
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const startDate = formatDate(new Date(selectedYear, selectedMonth - 1, 1));
+  const endDate = formatDate(new Date(selectedYear, selectedMonth, 0));
 
   const { data: transactions = [], isLoading, refetch } = useQuery({
     queryKey: ['transactions', user?.id, selectedMonth, selectedYear],
