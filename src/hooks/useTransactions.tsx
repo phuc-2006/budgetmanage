@@ -100,14 +100,43 @@ export function useTransactions(month?: number, year?: number) {
     },
   });
 
-  const totalIncome = transactions
+  // Monthly totals (for the selected month)
+  const monthlyIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const totalExpense = transactions
+  const monthlyExpense = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
+  // All-time totals query
+  const { data: allTimeData } = useQuery({
+    queryKey: ['transactions-all-time', user?.id],
+    queryFn: async () => {
+      if (!user) return { totalIncome: 0, totalExpense: 0 };
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('amount, type')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      const totalIncome = (data || [])
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const totalExpense = (data || [])
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      return { totalIncome, totalExpense };
+    },
+    enabled: !!user,
+  });
+
+  const totalIncome = allTimeData?.totalIncome ?? 0;
+  const totalExpense = allTimeData?.totalExpense ?? 0;
   const balance = totalIncome - totalExpense;
 
   return {
@@ -119,6 +148,8 @@ export function useTransactions(month?: number, year?: number) {
     totalIncome,
     totalExpense,
     balance,
+    monthlyIncome,
+    monthlyExpense,
     selectedMonth,
     selectedYear,
   };
