@@ -135,9 +135,10 @@ export function useTransactions(month?: number, year?: number) {
     enabled: !!user,
   });
 
-  const totalIncome = allTimeData?.totalIncome ?? 0;
-  const totalExpense = allTimeData?.totalExpense ?? 0;
-  const balance = totalIncome - totalExpense;
+  // Balance is all-time
+  const allTimeIncome = allTimeData?.totalIncome ?? 0;
+  const allTimeExpense = allTimeData?.totalExpense ?? 0;
+  const balance = allTimeIncome - allTimeExpense;
 
   return {
     transactions,
@@ -145,8 +146,10 @@ export function useTransactions(month?: number, year?: number) {
     refetch,
     addTransaction,
     deleteTransaction,
-    totalIncome,
-    totalExpense,
+    // Income/expense are monthly
+    totalIncome: monthlyIncome,
+    totalExpense: monthlyExpense,
+    // Balance is all-time
     balance,
     monthlyIncome,
     monthlyExpense,
