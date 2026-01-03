@@ -75,6 +75,7 @@ export function useTransactions(month?: number, year?: number) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions-all-time'] });
       toast.success('Đã thêm giao dịch thành công!');
     },
     onError: (error) => {
@@ -93,6 +94,7 @@ export function useTransactions(month?: number, year?: number) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions-all-time'] });
       toast.success('Đã xóa giao dịch!');
     },
     onError: (error) => {
