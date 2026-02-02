@@ -70,7 +70,8 @@ export function useDebts() {
       return data as Contact;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['debts', user?.id] });
     },
     onError: (error) => {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
@@ -84,8 +85,8 @@ export function useDebts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['debts', user?.id] });
       toast({ title: 'Đã xóa liên hệ' });
     },
     onError: (error) => {
@@ -102,7 +103,8 @@ export function useDebts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['debts', user?.id] });
       toast({ title: 'Đã thêm khoản nợ' });
     },
     onError: (error) => {
@@ -120,7 +122,8 @@ export function useDebts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['debts', user?.id] });
     },
     onError: (error) => {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
@@ -134,7 +137,8 @@ export function useDebts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['debts', user?.id] });
       toast({ title: 'Đã xóa khoản nợ' });
     },
     onError: (error) => {
