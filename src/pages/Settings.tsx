@@ -18,7 +18,10 @@ export default function Settings() {
   const { showDayOfWeek, setShowDayOfWeek, theme, setTheme } = useSettings();
   const { exportToExcel, isLoading: isExporting, transactionCount } = useExportTransactions();
   const { importFromExcel, isImporting } = useImportTransactions();
+  const { exportToExcel: exportDebts, isLoading: isExportingDebts, debtCount } = useExportDebts();
+  const { importFromExcel: importDebts, isImporting: isImportingDebts } = useImportDebts();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const debtFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
