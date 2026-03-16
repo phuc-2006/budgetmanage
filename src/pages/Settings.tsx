@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
 import { useExportTransactions } from '@/hooks/useExportTransactions';
 import { useImportTransactions } from '@/hooks/useImportTransactions';
+import { useExportDebts } from '@/hooks/useExportDebts';
+import { useImportDebts } from '@/hooks/useImportDebts';
 import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function Settings() {
@@ -16,15 +18,27 @@ export default function Settings() {
   const { showDayOfWeek, setShowDayOfWeek, theme, setTheme } = useSettings();
   const { exportToExcel, isLoading: isExporting, transactionCount } = useExportTransactions();
   const { importFromExcel, isImporting } = useImportTransactions();
+  const { exportToExcel: exportDebts, isLoading: isExportingDebts, debtCount } = useExportDebts();
+  const { importFromExcel: importDebts, isImporting: isImportingDebts } = useImportDebts();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const debtFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       await importFromExcel(file);
-      // Reset input to allow re-uploading same file
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDebtFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await importDebts(file);
+      if (debtFileInputRef.current) {
+        debtFileInputRef.current.value = '';
       }
     }
   };
@@ -158,6 +172,84 @@ export default function Settings() {
                   variant="outline"
                 >
                   {isImporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang nhập...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Tải lên
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle className="text-lg">Khoản nợ</CardTitle>
+            <CardDescription>Xuất và nhập dữ liệu khoản nợ/vay</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Export Debts */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Download className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label className="font-medium">Xuất file Excel</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Tải xuống toàn bộ {debtCount} khoản nợ dưới dạng file Excel
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={exportDebts} 
+                disabled={isExportingDebts || debtCount === 0}
+                variant="outline"
+              >
+                {isExportingDebts ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Đang xuất...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Tải xuống
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Import Debts */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Upload className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label className="font-medium">Nhập từ file Excel</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Tải lên file Excel để nhập khoản nợ mới
+                  </p>
+                </div>
+              </div>
+              <div>
+                <input
+                  type="file"
+                  ref={debtFileInputRef}
+                  onChange={handleDebtFileChange}
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  id="debt-excel-upload"
+                />
+                <Button 
+                  onClick={() => debtFileInputRef.current?.click()} 
+                  disabled={isImportingDebts}
+                  variant="outline"
+                >
+                  {isImportingDebts ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Đang nhập...
