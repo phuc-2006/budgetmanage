@@ -27,9 +27,18 @@ export default function Settings() {
     const file = e.target.files?.[0];
     if (file) {
       await importFromExcel(file);
-      // Reset input to allow re-uploading same file
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDebtFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await importDebts(file);
+      if (debtFileInputRef.current) {
+        debtFileInputRef.current.value = '';
       }
     }
   };
