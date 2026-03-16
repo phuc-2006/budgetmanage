@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
 import { useExportTransactions } from '@/hooks/useExportTransactions';
 import { useImportTransactions } from '@/hooks/useImportTransactions';
+import { useExportDebts } from '@/hooks/useExportDebts';
+import { useImportDebts } from '@/hooks/useImportDebts';
 import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function Settings() {
