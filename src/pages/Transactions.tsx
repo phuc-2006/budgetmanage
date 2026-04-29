@@ -12,6 +12,7 @@ import { Transaction } from '@/types/finance';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Transactions() {
   const { user, loading, signOut } = useAuth();
@@ -82,9 +83,11 @@ export default function Transactions() {
 
   const groupedIncome = groupByDate(sortedIncome);
   const groupedExpense = groupByDate(sortedExpense);
+  const groupedAll = groupByDate(allSorted);
 
   const incomeDates = Object.keys(groupedIncome).sort((a, b) => b.localeCompare(a));
   const expenseDates = Object.keys(groupedExpense).sort((a, b) => b.localeCompare(a));
+  const allDates = Object.keys(groupedAll).sort((a, b) => b.localeCompare(a));
 
   const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
   const totalExpense = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
@@ -204,53 +207,82 @@ export default function Transactions() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Expense Column */}
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
-                      <TrendingDown className="w-4 h-4 text-expense" />
-                    </div>
-                    <CardTitle className="text-lg">Chi tiêu</CardTitle>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-expense">-{formatCurrency(totalExpense)}</p>
-                    <p className="text-xs text-muted-foreground">{expenseTransactions.length} giao dịch</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[500px]">
-                  {renderTransactionList(groupedExpense, expenseDates, 'Chưa có chi tiêu trong tháng này')}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="all">Tất cả</TabsTrigger>
+              <TabsTrigger value="expense">Chi tiêu</TabsTrigger>
+              <TabsTrigger value="income">Thu nhập</TabsTrigger>
+            </TabsList>
 
-            {/* Income Column */}
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-income" />
+            <TabsContent value="all" className="mt-0">
+              <Card className="glass">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Tất cả giao dịch</CardTitle>
+                    <div className="text-right">
+                      <p className={cn("text-2xl font-bold", totalIncome - totalExpense >= 0 ? "text-income" : "text-expense")}>
+                        {totalIncome - totalExpense >= 0 ? '+' : ''}{formatCurrency(totalIncome - totalExpense)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{transactions.length} giao dịch</p>
                     </div>
-                    <CardTitle className="text-lg">Thu nhập</CardTitle>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-income">+{formatCurrency(totalIncome)}</p>
-                    <p className="text-xs text-muted-foreground">{incomeTransactions.length} giao dịch</p>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[600px]">
+                    {renderTransactionList(groupedAll, allDates, 'Chưa có giao dịch trong tháng này')}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="expense" className="mt-0">
+              <Card className="glass">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
+                        <TrendingDown className="w-4 h-4 text-expense" />
+                      </div>
+                      <CardTitle className="text-lg">Chi tiêu</CardTitle>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-expense">-{formatCurrency(totalExpense)}</p>
+                      <p className="text-xs text-muted-foreground">{expenseTransactions.length} giao dịch</p>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[500px]">
-                  {renderTransactionList(groupedIncome, incomeDates, 'Chưa có thu nhập trong tháng này')}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[600px]">
+                    {renderTransactionList(groupedExpense, expenseDates, 'Chưa có chi tiêu trong tháng này')}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="income" className="mt-0">
+              <Card className="glass">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-income" />
+                      </div>
+                      <CardTitle className="text-lg">Thu nhập</CardTitle>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-income">+{formatCurrency(totalIncome)}</p>
+                      <p className="text-xs text-muted-foreground">{incomeTransactions.length} giao dịch</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[600px]">
+                    {renderTransactionList(groupedIncome, incomeDates, 'Chưa có thu nhập trong tháng này')}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         )}
       </main>
     </div>

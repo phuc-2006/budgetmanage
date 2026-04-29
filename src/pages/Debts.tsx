@@ -11,6 +11,7 @@ import { DebtWithContact, ContactWithBalance } from '@/types/debt';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DebtSummary } from '@/components/debts/DebtSummary';
 import { AddDebtDialog } from '@/components/debts/AddDebtDialog';
 import { AddContactDialog } from '@/components/debts/AddContactDialog';
@@ -163,12 +164,15 @@ export default function Debts() {
     
     const lendDebts = getContactLendDebts(selectedContact.id);
     const borrowDebts = getContactBorrowDebts(selectedContact.id);
+    const allDebts = [...lendDebts, ...borrowDebts].sort(sortByDate);
     
     const groupedLend = groupByDate(lendDebts);
     const groupedBorrow = groupByDate(borrowDebts);
+    const groupedAll = groupByDate(allDebts);
     
     const lendDates = Object.keys(groupedLend).sort((a, b) => b.localeCompare(a));
     const borrowDates = Object.keys(groupedBorrow).sort((a, b) => b.localeCompare(a));
+    const allDates = Object.keys(groupedAll).sort((a, b) => b.localeCompare(a));
     
     const lendTotal = lendDebts.reduce((sum, d) => sum + Number(d.amount), 0);
     const borrowTotal = borrowDebts.reduce((sum, d) => sum + Number(d.amount), 0);
@@ -223,53 +227,82 @@ export default function Debts() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Lend Column */}
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-income" />
-                  </div>
-                  <CardTitle className="text-lg">Cho vay</CardTitle>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-income">+{formatCurrency(lendTotal)}</p>
-                  <p className="text-xs text-muted-foreground">{lendDebts.length} khoản</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[400px]">
-                {renderDebtList(groupedLend, lendDates, 'Chưa cho vay')}
-              </ScrollArea>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="all">Tất cả</TabsTrigger>
+            <TabsTrigger value="lend">Cho vay</TabsTrigger>
+            <TabsTrigger value="borrow">Đi vay</TabsTrigger>
+          </TabsList>
 
-          {/* Borrow Column */}
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
-                    <TrendingDown className="w-4 h-4 text-expense" />
+          <TabsContent value="all" className="mt-0">
+            <Card className="glass">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Tất cả khoản nợ</CardTitle>
+                  <div className="text-right">
+                    <p className={cn("text-2xl font-bold", selectedContact.balance > 0 ? "text-income" : "text-expense")}>
+                      {selectedContact.balance > 0 ? '+' : ''}{formatCurrency(selectedContact.balance)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{allDebts.length} khoản</p>
                   </div>
-                  <CardTitle className="text-lg">Đi vay</CardTitle>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-expense">-{formatCurrency(borrowTotal)}</p>
-                  <p className="text-xs text-muted-foreground">{borrowDebts.length} khoản</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[400px]">
+                  {renderDebtList(groupedAll, allDates, 'Không có khoản nợ nào')}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="lend" className="mt-0">
+            <Card className="glass">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-income/20 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-income" />
+                    </div>
+                    <CardTitle className="text-lg">Cho vay</CardTitle>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-income">+{formatCurrency(lendTotal)}</p>
+                    <p className="text-xs text-muted-foreground">{lendDebts.length} khoản</p>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[400px]">
-                {renderDebtList(groupedBorrow, borrowDates, 'Chưa đi vay')}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[400px]">
+                  {renderDebtList(groupedLend, lendDates, 'Chưa cho vay')}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="borrow" className="mt-0">
+            <Card className="glass">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-expense/20 flex items-center justify-center">
+                      <TrendingDown className="w-4 h-4 text-expense" />
+                    </div>
+                    <CardTitle className="text-lg">Đi vay</CardTitle>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-expense">-{formatCurrency(borrowTotal)}</p>
+                    <p className="text-xs text-muted-foreground">{borrowDebts.length} khoản</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[400px]">
+                  {renderDebtList(groupedBorrow, borrowDates, 'Chưa đi vay')}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </>
     );
   };
