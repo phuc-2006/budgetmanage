@@ -9,6 +9,7 @@ import { useDebts } from '@/hooks/useDebts';
 import { useSettings } from '@/hooks/useSettings';
 import { DebtWithContact, ContactWithBalance } from '@/types/debt';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { groupByDate } from '@/lib/balance';
 import { cn } from '@/lib/utils';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,17 +40,6 @@ export default function Debts() {
     const dateCompare = b.date.localeCompare(a.date);
     if (dateCompare !== 0) return dateCompare;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  };
-
-  const groupByDate = (items: DebtWithContact[]) => {
-    return items.reduce((groups, debt) => {
-      const date = debt.date;
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(debt);
-      return groups;
-    }, {} as Record<string, DebtWithContact[]>);
   };
 
   const renderContactCard = (contact: ContactWithBalance) => {

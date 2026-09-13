@@ -106,6 +106,9 @@ export function useImportTransactions() {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['all-transactions-export'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions-all-time'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions-opening-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-trend'] });
 
       if (imported > 0) {
         toast.success(`Đã nhập thành công ${imported} giao dịch`);

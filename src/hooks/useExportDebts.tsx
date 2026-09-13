@@ -15,6 +15,7 @@ export function useExportDebts() {
       const { data, error } = await supabase
         .from('debts')
         .select('*, contact:contacts(*)')
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
       if (error) throw error;
       return data as DebtWithContact[];

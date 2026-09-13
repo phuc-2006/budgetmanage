@@ -21,6 +21,7 @@ export interface Transaction {
   date: string;
   created_at: string;
   category?: Category;
+  balanceAfter?: number;
 }
 
 export interface Budget {

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDateSafe } from '@/lib/balance';
 import { useAuth } from './useAuth';
 
 export interface MonthlyData {
@@ -26,8 +27,8 @@ export function useMonthlyTrend() {
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
         
-        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+        const startDate = formatDateSafe(new Date(year, month - 1, 1));
+        const endDate = formatDateSafe(new Date(year, month, 0));
 
         const { data, error } = await supabase
           .from('transactions')

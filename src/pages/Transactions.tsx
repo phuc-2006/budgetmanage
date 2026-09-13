@@ -10,6 +10,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { MonthSelector } from '@/components/finance/MonthSelector';
 import { Transaction } from '@/types/finance';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { groupByDate } from '@/lib/balance';
 import { cn } from '@/lib/utils';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,7 +25,10 @@ export default function Transactions() {
     transactions,
     isLoading,
     deleteTransaction,
-    balance,
+    openingBalance = 0,
+    closingBalance = 0,
+    totalIncome,
+    totalExpense,
   } = useTransactions(month, year);
 
   if (loading) {
@@ -39,58 +43,17 @@ export default function Transactions() {
     return <Navigate to="/auth" replace />;
   }
 
-  // Separate income and expense transactions
+  // Separate income and expense transactions (transactions already sorted by date descending)
   const incomeTransactions = transactions.filter(t => t.type === 'income');
   const expenseTransactions = transactions.filter(t => t.type === 'expense');
 
-  // Sort by date descending
-  const sortByDate = (a: Transaction, b: Transaction) => {
-    const dateCompare = b.date.localeCompare(a.date);
-    if (dateCompare !== 0) return dateCompare;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  };
+  const groupedIncome = groupByDate(incomeTransactions);
+  const groupedExpense = groupByDate(expenseTransactions);
+  const groupedAll = groupByDate(transactions);
 
-  const sortedIncome = [...incomeTransactions].sort(sortByDate);
-  const sortedExpense = [...expenseTransactions].sort(sortByDate);
-
-  // Calculate running balance for each transaction
-  const allSorted = [...transactions].sort(sortByDate);
-  
-  const getBalanceAfter = (transaction: Transaction) => {
-    let runningBalance = balance;
-    for (const t of allSorted) {
-      if (t.id === transaction.id) break;
-      if (t.type === 'income') {
-        runningBalance -= Number(t.amount);
-      } else {
-        runningBalance += Number(t.amount);
-      }
-    }
-    return runningBalance;
-  };
-
-  // Group by date
-  const groupByDate = (txns: Transaction[]) => {
-    return txns.reduce((groups, transaction) => {
-      const date = transaction.date;
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(transaction);
-      return groups;
-    }, {} as Record<string, Transaction[]>);
-  };
-
-  const groupedIncome = groupByDate(sortedIncome);
-  const groupedExpense = groupByDate(sortedExpense);
-  const groupedAll = groupByDate(allSorted);
-
-  const incomeDates = Object.keys(groupedIncome).sort((a, b) => b.localeCompare(a));
-  const expenseDates = Object.keys(groupedExpense).sort((a, b) => b.localeCompare(a));
-  const allDates = Object.keys(groupedAll).sort((a, b) => b.localeCompare(a));
-
-  const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
-  const totalExpense = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+  const incomeDates = Object.keys(groupedIncome);
+  const expenseDates = Object.keys(groupedExpense);
+  const allDates = Object.keys(groupedAll);
 
   const handleMonthChange = (m: number, y: number) => {
     setMonth(m);
@@ -98,7 +61,7 @@ export default function Transactions() {
   };
 
   const renderTransactionItem = (transaction: Transaction, index: number) => {
-    const balanceAfter = getBalanceAfter(transaction);
+    const balanceAfter = transaction.balanceAfter ?? 0;
     
     return (
       <div
@@ -207,7 +170,33 @@ export default function Transactions() {
             </CardContent>
           </Card>
         ) : (
-          <Tabs defaultValue="all" className="w-full">
+          <>
+            {/* Monthly Balance Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card className="glass p-3">
+                <p className="text-xs text-muted-foreground">Số dư đầu tháng</p>
+                <p className="text-sm sm:text-base font-semibold truncate">{formatCurrency(openingBalance)}</p>
+              </Card>
+              <Card className="glass p-3">
+                <p className="text-xs text-muted-foreground">Tổng thu trong tháng</p>
+                <p className="text-sm sm:text-base font-semibold text-income truncate">+{formatCurrency(totalIncome)}</p>
+              </Card>
+              <Card className="glass p-3">
+                <p className="text-xs text-muted-foreground">Tổng chi trong tháng</p>
+                <p className="text-sm sm:text-base font-semibold text-expense truncate">-{formatCurrency(totalExpense)}</p>
+              </Card>
+              <Card className="glass p-3">
+                <p className="text-xs text-muted-foreground">Số dư cuối tháng</p>
+                <p className={cn(
+                  "text-sm sm:text-base font-semibold truncate",
+                  closingBalance >= 0 ? "text-primary" : "text-expense"
+                )}>
+                  {formatCurrency(closingBalance)}
+                </p>
+              </Card>
+            </div>
+
+            <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="all">Tất cả</TabsTrigger>
               <TabsTrigger value="expense">Chi tiêu</TabsTrigger>
@@ -283,6 +272,7 @@ export default function Transactions() {
               </Card>
             </TabsContent>
           </Tabs>
+          </>
         )}
       </main>
     </div>

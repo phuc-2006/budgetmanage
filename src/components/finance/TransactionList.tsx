@@ -5,16 +5,17 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Transaction } from '@/types/finance';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { groupByDate } from '@/lib/balance';
 import { cn } from '@/lib/utils';
 
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
   isDeleting?: boolean;
-  currentBalance: number;
+  currentBalance?: number;
 }
 
-export function TransactionList({ transactions, onDelete, isDeleting, currentBalance = 0 }: TransactionListProps) {
+export function TransactionList({ transactions, onDelete, isDeleting }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
       <Card className="glass">
@@ -26,42 +27,11 @@ export function TransactionList({ transactions, onDelete, isDeleting, currentBal
     );
   }
 
-  // Sort transactions by date descending, then by created_at descending
-  const sortedTransactions = [...transactions].sort((a, b) => {
-    const dateCompare = b.date.localeCompare(a.date);
-    if (dateCompare !== 0) return dateCompare;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  // Transactions are already sorted descending by date and have balanceAfter computed
+  const groupedTransactions = groupByDate(transactions);
+  const sortedDates = Object.keys(groupedTransactions);
 
-  // Calculate running balance for each transaction (from newest to oldest)
-  const transactionsWithBalance = sortedTransactions.map((transaction, index) => {
-    // Start with current balance and add back transactions that came after this one
-    let balanceAfter = currentBalance;
-    for (let i = 0; i < index; i++) {
-      const t = sortedTransactions[i];
-      if (t.type === 'income') {
-        balanceAfter -= Number(t.amount);
-      } else {
-        balanceAfter += Number(t.amount);
-      }
-    }
-    return { ...transaction, balanceAfter };
-  });
-
-  // Group transactions by date
-  const groupedTransactions = transactionsWithBalance.reduce((groups, transaction) => {
-    const date = transaction.date;
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(transaction);
-    return groups;
-  }, {} as Record<string, (Transaction & { balanceAfter: number })[]>);
-
-  // Sort dates descending
-  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
-
-  // Only show first 5 transactions on dashboard
+  // Only show first 3 date groups on dashboard
   const recentDates = sortedDates.slice(0, 3);
 
   return (
@@ -103,8 +73,8 @@ export function TransactionList({ transactions, onDelete, isDeleting, currentBal
                         <p className="text-xs text-muted-foreground mt-0.5">
                           Số dư: <span className={cn(
                             "font-medium",
-                            transaction.balanceAfter >= 0 ? 'text-income' : 'text-expense'
-                          )}>{formatCurrency(transaction.balanceAfter)}</span>
+                            (transaction.balanceAfter ?? 0) >= 0 ? 'text-income' : 'text-expense'
+                          )}>{formatCurrency(transaction.balanceAfter ?? 0)}</span>
                         </p>
                       </div>
                     </div>

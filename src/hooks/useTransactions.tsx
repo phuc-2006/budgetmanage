@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction, TransactionType } from '@/types/finance';
+import { calculateMonthlyBalances, formatDateSafe } from '@/lib/balance';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
@@ -12,18 +14,10 @@ export function useTransactions(month?: number, year?: number) {
   const selectedMonth = month ?? currentDate.getMonth() + 1;
   const selectedYear = year ?? currentDate.getFullYear();
 
-  // Format date without timezone conversion (toISOString converts to UTC which shifts dates)
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const startDate = formatDateSafe(new Date(selectedYear, selectedMonth - 1, 1));
+  const endDate = formatDateSafe(new Date(selectedYear, selectedMonth, 0));
 
-  const startDate = formatDate(new Date(selectedYear, selectedMonth - 1, 1));
-  const endDate = formatDate(new Date(selectedYear, selectedMonth, 0));
-
-  const { data: transactions = [], isLoading, refetch } = useQuery({
+  const { data: rawTransactions = [], isLoading, refetch } = useQuery({
     queryKey: ['transactions', user?.id, selectedMonth, selectedYear],
     queryFn: async () => {
       if (!user) return [];
@@ -47,6 +41,33 @@ export function useTransactions(month?: number, year?: number) {
 
       if (error) throw error;
       return data as Transaction[];
+    },
+    enabled: !!user,
+  });
+
+  // Query opening balance: sum of income - expense strictly before startDate
+  const { data: openingBalance = 0, isLoading: isOpeningLoading } = useQuery({
+    queryKey: ['transactions-opening-balance', user?.id, startDate],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('amount, type')
+        .eq('user_id', user.id)
+        .lt('date', startDate);
+
+      if (error) throw error;
+
+      const prevIncome = (data || [])
+        .filter((t) => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const prevExpense = (data || [])
+        .filter((t) => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      return prevIncome - prevExpense;
     },
     enabled: !!user,
   });
@@ -76,6 +97,8 @@ export function useTransactions(month?: number, year?: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['transactions-all-time'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions-opening-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-trend'] });
       toast.success('Đã thêm giao dịch thành công!');
     },
     onError: (error) => {
@@ -95,6 +118,8 @@ export function useTransactions(month?: number, year?: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['transactions-all-time'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions-opening-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-trend'] });
       toast.success('Đã xóa giao dịch!');
     },
     onError: (error) => {
@@ -102,14 +127,15 @@ export function useTransactions(month?: number, year?: number) {
     },
   });
 
-  // Monthly totals (for the selected month)
-  const monthlyIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const monthlyExpense = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  // Calculate forward cumulative balance and monthly totals from openingBalance
+  const {
+    transactions,
+    closingBalance,
+    monthlyIncome,
+    monthlyExpense,
+  } = useMemo(() => {
+    return calculateMonthlyBalances(rawTransactions, openingBalance);
+  }, [rawTransactions, openingBalance]);
 
   // All-time totals query
   const { data: allTimeData } = useQuery({
@@ -144,13 +170,15 @@ export function useTransactions(month?: number, year?: number) {
 
   return {
     transactions,
-    isLoading,
+    isLoading: isLoading || isOpeningLoading,
     refetch,
     addTransaction,
     deleteTransaction,
     // Income/expense are monthly
     totalIncome: monthlyIncome,
     totalExpense: monthlyExpense,
+    openingBalance,
+    closingBalance,
     // Balance is all-time
     balance,
     monthlyIncome,
